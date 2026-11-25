@@ -105,6 +105,29 @@
   .czv{padding:40px;text-align:center;color:var(--text-muted);font-size:14px}
   body.vend .folha{min-width:0;width:min(720px,100%)}
   .folha.larga{min-width:2300px}
+  /* ---------- colunas e cabeçalho fixos + linha em foco (só na tela) ---------- */
+  @media screen{
+    #app:not([hidden]){display:flex;flex-direction:column;height:100vh}
+    #bar{position:relative;flex:none}
+    #wrap{flex:1;min-height:0;overflow:auto;padding:0!important}
+    #wrap>.folha{margin:16px 24px}
+    #wrap>.rodape{padding-left:24px;padding-right:24px}
+    table.pf tr.h1 th{position:sticky;top:0;z-index:3}
+    table.pf tr.h2 th{position:sticky;top:var(--t2,32px);z-index:3}
+    table.pf tr.h3 th{position:sticky;top:var(--t3,56px);z-index:3}
+    table.pf .s1{position:sticky;left:0;z-index:2}
+    table.pf .s2{position:sticky;left:var(--l2,240px);z-index:2}
+    table.pf .s3{position:sticky;left:var(--l3,320px);z-index:2}
+    table.pf tr.h1 th.s1,table.pf tr.h1 th.s2,table.pf tr.h1 th.s3{z-index:6}
+    table.pf{border-collapse:separate;border-spacing:0}
+    table.pf td,table.pf th{border-width:0 1px 1px 0;background-clip:padding-box}
+    table.pf .stit{border-width:0}
+    table.pf td.s1{border-left:1px solid var(--border-default)}
+    table.pf td.s1,table.pf td.s2,table.pf td.s3{box-shadow:inset -1px 0 0 var(--border-default)}
+    table.pf tr.foco td.in{background:#E1F4E8}
+    table.pf tr.foco td.pn,table.pf tr.foco td.cm,table.pf tr.foco td.qt{background:#A9DDBC;color:#0A4F27}
+    table.pf tr.foco td.in input:focus{background:#fff}
+  }
   /* ---------- impressão ---------- */
   @page{size:A4 landscape;margin:5mm}
   @media print{
@@ -113,6 +136,9 @@
     #wrap{padding:0;overflow:visible}
     .folha,.folha.larga{padding:0;width:100%;min-width:0;background:none;border:0;border-radius:0;box-shadow:none;animation:none}
     html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    #app{display:block!important;height:auto!important}
+    table.pf th,table.pf td{position:static!important;box-shadow:none!important}
+    table.pf tr.foco td{background:revert}
     td.in input::placeholder,th.nm input::placeholder{color:transparent}
     td.in input:focus{background:transparent;box-shadow:none}
     table.pf td,table.pf th{font-size:6.2px;height:2.95mm!important}
@@ -173,7 +199,7 @@
   <div class="rodape">
     <span id="dica"></span>
     A planilha troca sozinha para a semana seguinte (segunda, quarta e sexta) na sexta-feira.
-    &nbsp;·&nbsp;versão 24/11-C<span id="spSenha">&nbsp;·&nbsp;<a id="lnkSenha">Gerar código de nova senha</a></span>
+    &nbsp;·&nbsp;versão 25/11-A<span id="spSenha">&nbsp;·&nbsp;<a id="lnkSenha">Gerar código de nova senha</a></span>
   </div></div>
 </div>
 
@@ -213,7 +239,7 @@ let diaSel = 0;
 let aba = "pedido";
 const ALT = {pedido:22};
 try{ const a=JSON.parse(localStorage.getItem("pf_alturas")||"null"); if(a) Object.assign(ALT,a); }catch(e){}
-function aplicarAltura(){ $("#wrap").style.setProperty("--rh",ALT.pedido+"px"); $("#altV").textContent=ALT.pedido+" px"; }
+function aplicarAltura(){ $("#wrap").style.setProperty("--rh",ALT.pedido+"px"); $("#altV").textContent=ALT.pedido+" px"; if (typeof fixarPos==="function") setTimeout(fixarPos,0); }
 function dataDia(i){ const d=new Date(segunda); d.setDate(d.getDate()+[0,2,4][i]); return d; }
 function diaInicial(){
   const h=new Date(), w=h.getDay(), s=segundaAlvo(h);
@@ -317,17 +343,17 @@ function desenharPedido(){
   } else {
     h+='<table class="pf"><colgroup><col style="width:10.5%"><col style="width:3.2%"><col style="width:3%">'+'<col style="width:2.6%"><col style="width:2.1%">'.repeat(NC)+'</colgroup>';
     h+=`<tr><td colspan="${3+NC*2}" class="stit">${br(dt)} &nbsp;—&nbsp; UNIÃO DISTRIBUIDORA | TAKAARA &nbsp;—&nbsp; PEDIDO DE COMPRAS POR FORNECEDOR</td></tr>`;
-    h+='<tr><th rowspan="3">PRODUTO</th><th rowspan="3">CUSTO<br>MÉDIO (R$)</th><th rowspan="3">QTD<br>TOTAL</th>';
+    h+='<tr class="h1"><th rowspan="3" class="s1">PRODUTO</th><th rowspan="3" class="s2">CUSTO<br>MÉDIO (R$)</th><th rowspan="3" class="s3">QTD<br>TOTAL</th>';
     for(let c=0;c<NC;c++) h+=`<th class="nm" colspan="2"><input data-id="n${c}" placeholder="Coluna ${c+1}" autocomplete="off"></th>`;
-    h+='</tr><tr>';
+    h+='</tr><tr class="h2">';
     for(let c=0;c<NC;c++) h+=`<th class="gr" colspan="2" id="gr${c}"><select data-id="g${c}" title="Para qual cartaz vão os pedidos desta coluna"><option value="pedra">Pedra</option><option value="fora">Fora</option></select></th>`;
-    h+='</tr><tr>'+'<th>QTDE</th><th>PREÇO</th>'.repeat(NC)+'</tr>';
+    h+='</tr><tr class="h3">'+'<th>QTDE</th><th>PREÇO</th>'.repeat(NC)+'</tr>';
     PRODS.forEach((p,r)=>{
-      h+=`<tr class="${r%2?"":"z"}"><td class="pn">${esc(p)}</td><td class="cm" id="cm${r}"></td><td class="qt" id="qt${r}"></td>`;
+      h+=`<tr class="${r%2?"":"z"}"><td class="pn s1">${esc(p)}</td><td class="cm s2" id="cm${r}"></td><td class="qt s3" id="qt${r}"></td>`;
       for(let c=0;c<NC;c++) h+=`<td class="in"><input inputmode="decimal" data-id="q${r}_${c}" autocomplete="off"></td><td class="in"><input inputmode="decimal" data-id="p${r}_${c}" autocomplete="off"></td>`;
       h+='</tr>';
     });
-    h+='<tr><td class="tot">TOTAL GERAL</td><td class="tot" id="TGV"></td><td class="tot" id="TGQ"></td>';
+    h+='<tr><td class="tot s1">TOTAL GERAL</td><td class="tot s2" id="TGV"></td><td class="tot s3" id="TGQ"></td>';
     for(let c=0;c<NC;c++) h+=`<td class="tot" id="Tq${c}"></td><td class="tot" id="Tv${c}"></td>`;
     h+='</tr>';
     h+=`<tr><td colspan="${3+NC*2}" class="leg">LEGENDA: Em cada fornecedor, QTDE = quantidade e PREÇO = valor unitário. CUSTO MÉDIO = média ponderada de todos. TOTAL GERAL: no QTDE a soma das quantidades da coluna; no PREÇO o valor total da coluna (QTDE × PREÇO); no CUSTO MÉDIO o valor total geral.</td></tr>`;
@@ -340,8 +366,21 @@ function desenharPedido(){
     else if (id[0]==="n") el.value = nomeCol(+id.slice(1));
     else el.value = dados[id] ?? "";
   });
-  recalcular();
+  recalcular(); fixarPos();
 }
+function fixarPos(){
+  const tb=document.querySelector("table.pf"); if(!tb||!tb.rows[1]||!tb.rows[1].classList.contains("h1")) return;
+  const r=tb.rows, h1=r[1].offsetHeight, h2=r[2].offsetHeight;
+  const w1=r[1].cells[0].offsetWidth, w2=r[1].cells[1].offsetWidth;
+  tb.style.setProperty("--t2",h1+"px"); tb.style.setProperty("--t3",(h1+h2)+"px");
+  tb.style.setProperty("--l2",w1+"px"); tb.style.setProperty("--l3",(w1+w2)+"px");
+}
+window.addEventListener("resize",fixarPos);
+document.addEventListener("focusin",e=>{
+  document.querySelectorAll("tr.foco").forEach(x=>x.classList.remove("foco"));
+  if (e.target.matches && e.target.matches('table.pf input[data-id^="q"],table.pf input[data-id^="p"]')) e.target.closest("tr").classList.add("foco");
+});
+document.addEventListener("focusout",e=>{ if(!e.relatedTarget) document.querySelectorAll("tr.foco").forEach(x=>x.classList.remove("foco")); });
 function recalcular(){
   const f=(n,c=2)=>fmt(n,c), fq=n=>fmt(n,n%1?2:0);
   if (ehVend()){
