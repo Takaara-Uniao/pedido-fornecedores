@@ -124,6 +124,9 @@
     table.pf .stit{border-width:0}
     table.pf td.s1{border-left:1px solid var(--border-default)}
     table.pf td.s1,table.pf td.s2,table.pf td.s3{box-shadow:inset -1px 0 0 var(--border-default)}
+    table.pf td.cf{background:#DCEBFA}
+    table.pf th.cf{background:#F2B134!important;color:#191C18!important}
+    table.pf th.cf input{color:#191C18}
     table.pf tr.foco td.in{background:#E1F4E8}
     table.pf tr.foco td.pn,table.pf tr.foco td.cm,table.pf tr.foco td.qt{background:#A9DDBC;color:#0A4F27}
     table.pf tr.foco td.in input:focus{background:#fff}
@@ -199,7 +202,7 @@
   <div class="rodape">
     <span id="dica"></span>
     A planilha troca sozinha para a semana seguinte (segunda, quarta e sexta) na sexta-feira.
-    &nbsp;·&nbsp;versão 25/11-A<span id="spSenha">&nbsp;·&nbsp;<a id="lnkSenha">Gerar código de nova senha</a></span>
+    &nbsp;·&nbsp;versão 25/11-B<span id="spSenha">&nbsp;·&nbsp;<a id="lnkSenha">Gerar código de nova senha</a></span>
   </div></div>
 </div>
 
@@ -376,11 +379,21 @@ function fixarPos(){
   tb.style.setProperty("--l2",w1+"px"); tb.style.setProperty("--l3",(w1+w2)+"px");
 }
 window.addEventListener("resize",fixarPos);
+function limparFoco(){ document.querySelectorAll("tr.foco").forEach(x=>x.classList.remove("foco")); document.querySelectorAll(".cf").forEach(x=>x.classList.remove("cf")); }
 document.addEventListener("focusin",e=>{
-  document.querySelectorAll("tr.foco").forEach(x=>x.classList.remove("foco"));
-  if (e.target.matches && e.target.matches('table.pf input[data-id^="q"],table.pf input[data-id^="p"]')) e.target.closest("tr").classList.add("foco");
+  limparFoco();
+  if (e.target.matches && e.target.matches('table.pf input[data-id^="q"],table.pf input[data-id^="p"]')){
+    e.target.closest("tr").classList.add("foco");
+    const m=e.target.dataset.id.match(/^[qp]\d+_(\d+)$/), tb=e.target.closest("table");
+    if (m && tb.rows[1] && tb.rows[1].classList.contains("h1")){
+      const c=+m[1];
+      tb.querySelectorAll('input[data-id$="_'+c+'"]').forEach(i=>i.parentElement.classList.add("cf"));
+      [tb.rows[1].cells[3+c], tb.rows[2].cells[c], tb.rows[3].cells[2*c], tb.rows[3].cells[2*c+1]].forEach(x=>x&&x.classList.add("cf"));
+    }
+  }
 });
-document.addEventListener("focusout",e=>{ if(!e.relatedTarget) document.querySelectorAll("tr.foco").forEach(x=>x.classList.remove("foco")); });
+document.addEventListener("focusout",e=>{ if(!e.relatedTarget) limparFoco(); });
+window.addEventListener("beforeprint",limparFoco);
 function recalcular(){
   const f=(n,c=2)=>fmt(n,c), fq=n=>fmt(n,n%1?2:0);
   if (ehVend()){
